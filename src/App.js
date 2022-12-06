@@ -15,7 +15,8 @@ const App = () => {
   const [allWaves, setAllWaves] = useState([]);
   console.log("currentAccount: ", currentAccount);
   /* デプロイされたコントラクトのアドレスを保持する変数を作成 */
-  const contractAddress = "0x1d1E30aF5F7dbF2BBf82Fe77E115D10950bF782F";
+  // const contractAddress = "0x1d1E30aF5F7dbF2BBf82Fe77E115D10950bF782F";
+  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
   /* コントラクトからすべてのwavesを取得するメソッドを作成 */
   /* ABIの内容を参照する変数を作成 */
   const contractABI = abi.abi;
@@ -58,14 +59,16 @@ const App = () => {
   useEffect(() => {
     let wavePortalContract;
 
-    const onNewWave = (from, timestamp, message) => {
-      console.log("NewWave", from, timestamp, message);
+    const onNewWave = (id, from, timestamp, message, done) => {
+      console.log("NewWave", id, from, timestamp, message, done);
       setAllWaves((prevState) => [
         ...prevState,
         {
+          id: id,
           address: from,
           timestamp: new Date(timestamp * 1000),
           message: message,
+          done: done,
         },
       ]);
     };
@@ -236,7 +239,7 @@ const App = () => {
           />
         )}
         {/* 履歴を表示する */}
-        {currentAccount &&
+        {currentAccount && !wave.done &&
           allWaves
             .slice(0)
             .reverse()
@@ -250,9 +253,13 @@ const App = () => {
                     padding: "8px",
                   }}
                 >
+                  <div>Id: {wave.id}</div>
                   <div>Address: {wave.address}</div>
                   <div>Time: {wave.timestamp.toString()}</div>
                   <div>Message: {wave.message}</div>
+                  <button className="Done" onClick={wave}>
+                    Task {wave.id} is Done!
+                  </button>
                 </div>
               );
             })}
