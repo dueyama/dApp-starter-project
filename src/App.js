@@ -38,9 +38,11 @@ const App = () => {
         /* UIに必要なのは、アドレス、タイムスタンプ、メッセージだけなので、以下のように設定 */
         const wavesCleaned = waves.map((wave) => {
           return {
+            id: wave.id,
             address: wave.waver,
             timestamp: new Date(wave.timestamp * 1000),
             message: wave.message,
+            done: wave.done,
           };
         });
         /* React Stateにデータを格納する */
@@ -73,6 +75,10 @@ const App = () => {
       ]);
     };
 
+    const onDoneIt = (id) => {
+      console.log("DoneIt", id);
+    };
+
     /* NewWaveイベントがコントラクトから発信されたときに、情報をを受け取ります */
     if (window.ethereum) {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -84,11 +90,13 @@ const App = () => {
         signer
       );
       wavePortalContract.on("NewWave", onNewWave);
+      wavePortalContract.on("DoneIt", onDoneIt)
     }
     /*メモリリークを防ぐために、NewWaveのイベントを解除します*/
     return () => {
       if (wavePortalContract) {
         wavePortalContract.off("NewWave", onNewWave);
+        wavePortalContract.off("DoneIt", onDoneIt);
       }
     };
   }, []);
@@ -187,6 +195,26 @@ const App = () => {
     }
   };
 
+    /* waveの回数をカウントする関数を実装 */
+    const doneIt = async (id) => {
+      try {
+        const { ethereum } = window;
+        if (ethereum) {
+          const provider = new ethers.providers.Web3Provider(ethereum);
+          const signer = provider.getSigner();
+          /* ABIを参照 */
+          const wavePortalContract = new ethers.Contract(
+            contractAddress,
+            contractABI,
+            signer
+          );
+          await wavePortalContract.doneIt(id);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
   /* WEBページがロードされたときにcheckIfWalletIsConnected()を実行 */
   useEffect(() => {
     checkIfWalletIsConnected();
@@ -239,7 +267,7 @@ const App = () => {
           />
         )}
         {/* 履歴を表示する */}
-        {currentAccount && !wave.done &&
+        {currentAccount &&
           allWaves
             .slice(0)
             .reverse()
@@ -253,12 +281,13 @@ const App = () => {
                     padding: "8px",
                   }}
                 >
-                  <div>Id: {wave.id}</div>
+                  <div>Id: {wave.id.toString()}</div>
                   <div>Address: {wave.address}</div>
                   <div>Time: {wave.timestamp.toString()}</div>
                   <div>Message: {wave.message}</div>
-                  <button className="Done" onClick={wave}>
-                    Task {wave.id} is Done!
+                  <div>Done: {wave.done.toString()}</div>
+                  <button className="Done" onClick={() => doneIt(wave.id)}>
+                    Done!
                   </button>
                 </div>
               );
